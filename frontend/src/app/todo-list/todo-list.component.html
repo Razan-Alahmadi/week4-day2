@@ -28,16 +28,33 @@
         class="todo-item"
         [ngClass]="{ completed: todo.complete }"
       >
-        <span class="todo-name">{{ todo.name }}</span>
+        <span class="todo-name" *ngIf="editingTodoId !== todo.id">{{
+          todo.name
+        }}</span>
+        <input
+          *ngIf="editingTodoId === todo.id"
+          [(ngModel)]="editedTodoName"
+          (keyup.enter)="saveEdit(todo)"
+        />
         <div class="todo-actions">
-          <button
-            *ngIf="!todo.complete"
-            (click)="completeTodo(todo.id)"
-            class="complete-btn"
-          >
-            ✓
-          </button>
-          <button (click)="removeTodo(todo.id)" class="remove-btn">✕</button>
+          <!-- Show Complete and Remove buttons when NOT editing -->
+          <ng-container *ngIf="editingTodoId !== todo.id">
+            <button
+              *ngIf="!todo.complete"
+              (click)="completeTodo(todo.id)"
+              class="complete-btn"
+            >
+              ✓
+            </button>
+            <button (click)="removeTodo(todo.id)" class="remove-btn">✕</button>
+            <button (click)="startEdit(todo)" class="edit-btn">Edit</button>
+          </ng-container>
+
+          <!-- Show Save and Cancel buttons when editing -->
+          <ng-container *ngIf="editingTodoId === todo.id">
+            <button (click)="saveEdit(todo)" class="save-btn">Save</button>
+            <button (click)="cancelEdit()" class="cancel-btn">Cancel</button>
+          </ng-container>
         </div>
       </li>
     </ul>

@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common'
-import { Component, OnInit } from '@angular/core'
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -7,21 +7,22 @@ import {
   FormsModule,
   ReactiveFormsModule,
   Validators,
-} from '@angular/forms'
-import { Observable } from 'rxjs'
-import { Task } from '../state/list.reducer'
-import { Store } from '@ngrx/store'
+} from '@angular/forms';
+import { Observable } from 'rxjs';
+import { Task } from '../state/list.reducer';
+import { Store } from '@ngrx/store';
 import {
   selectAllTodos,
   selectCompletedTodos,
   selectIncompleteTodos,
-} from '../state/list.selector'
+} from '../state/list.selector';
 import {
   addTask,
   completeTask,
   removeTask,
   resetTasks,
-} from '../state/list.actions'
+  editTask,
+} from '../state/list.actions';
 
 @Component({
   selector: 'app-todo-list',
@@ -30,24 +31,29 @@ import {
   styleUrl: './todo-list.component.scss',
 })
 export class TodoListComponent implements OnInit {
-  todoForm?: FormGroup
-  todos$?: Observable<Task[]>
-  completedTodos$?: Observable<Task[]>
-  incompleteTodos$?: Observable<Task[]>
+  todoForm?: FormGroup;
+  todos$?: Observable<Task[]>;
+  completedTodos$?: Observable<Task[]>;
+  incompleteTodos$?: Observable<Task[]>;
+
+  // Local state for editing
+  editingTodoId: string | null = null;
+  editedTodoName: string = '';
 
   constructor(private fb: FormBuilder, private store: Store) {
-    this.todos$ = this.store.select(selectAllTodos)
-    this.completedTodos$ = this.store.select(selectCompletedTodos)
-    this.incompleteTodos$ = this.store.select(selectIncompleteTodos)
+    this.todos$ = this.store.select(selectAllTodos);
+    this.completedTodos$ = this.store.select(selectCompletedTodos);
+    this.incompleteTodos$ = this.store.select(selectIncompleteTodos);
   }
 
   ngOnInit(): void {
     this.todoForm = this.fb.group({
       name: new FormControl('', [Validators.min(2), Validators.required]),
-    })
+    });
   }
+
   onSubmit() {
-    this.todoForm?.reset()
+    this.todoForm?.reset();
   }
 
   addTodo(): void {
@@ -59,19 +65,42 @@ export class TodoListComponent implements OnInit {
             complete: false,
           },
         }),
-      )
-      this.todoForm.reset()
+      );
+      this.todoForm.reset();
     }
   }
+
   completeTodo(id: string): void {
-    this.store.dispatch(completeTask({ id }))
+    this.store.dispatch(completeTask({ id }));
   }
 
   removeTodo(id: string): void {
-    this.store.dispatch(removeTask({ id }))
+    this.store.dispatch(removeTask({ id }));
   }
 
   resetAllTodos(): void {
-    this.store.dispatch(resetTasks())
+    this.store.dispatch(resetTasks());
+  }
+
+  startEdit(todo: Task): void {
+    this.editingTodoId = todo.id;
+    this.editedTodoName = todo.name;
+  }
+
+  saveEdit(todo: Task): void {
+    if (this.editingTodoId === todo.id) {
+      this.store.dispatch(
+        editTask({
+          id: todo.id,
+          updates: { name: this.editedTodoName },
+        }),
+      );
+      this.cancelEdit();
+    }
+  }
+
+  cancelEdit(): void {
+    this.editingTodoId = null;
+    this.editedTodoName = '';
   }
 }

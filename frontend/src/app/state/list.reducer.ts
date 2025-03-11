@@ -1,13 +1,13 @@
-import { createReducer, on } from '@ngrx/store'
-import { addTask,editTask, completeTask, resetTasks, removeTask } from './list.actions'
+import { createReducer, on } from '@ngrx/store';
+import { addTask, editTask, completeTask, resetTasks, removeTask } from './list.actions';
 
 export type Task = {
-  id: string
-  complete: boolean
-  name: string
-}
+  id: string;
+  complete: boolean;
+  name: string;
+};
 
-export const initialState: Task[] = []
+export const initialState: Task[] = [];
 
 export const listReducer = createReducer(
   initialState,
@@ -21,15 +21,15 @@ export const listReducer = createReducer(
   ]),
 
   on(editTask, (state, { id, updates }) =>
-    state.map(task => 
+    state.map(task =>
       task.id === id ? { ...task, ...updates } : task
     )
   ),
-  
+
   on(completeTask, (state, { id }) =>
     state.map(task => (task.id === id ? { ...task, complete: true } : task)),
   ),
 
   on(removeTask, (state, { id }) => state.filter(task => task.id !== id)),
   on(resetTasks, () => []),
-)
+);
