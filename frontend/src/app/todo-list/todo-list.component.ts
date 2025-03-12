@@ -1,44 +1,23 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { Task } from '../state/list.reducer';
 import { Store } from '@ngrx/store';
-import {
-  selectAllTodos,
-  selectCompletedTodos,
-  selectIncompleteTodos,
-} from '../state/list.selector';
-import {
-  addTask,
-  completeTask,
-  removeTask,
-  resetTasks,
-  editTask,
-} from '../state/list.actions';
+import { loadTasks, addTask, completeTask, removeTask, resetTasks, editTask } from '../state/list.actions';
+import { selectAllTodos, selectCompletedTodos, selectIncompleteTodos } from '../state/list.selector';
 
 @Component({
   selector: 'app-todo-list',
-  imports: [ReactiveFormsModule, CommonModule, FormsModule, FormsModule],
   templateUrl: './todo-list.component.html',
-  styleUrl: './todo-list.component.scss',
 })
 export class TodoListComponent implements OnInit {
-  todoForm?: FormGroup;
-  todos$?: Observable<Task[]>;
-  completedTodos$?: Observable<Task[]>;
-  incompleteTodos$?: Observable<Task[]>;
+  todoForm!: FormGroup;
+  todos$: Observable<Task[]>;
+  completedTodos$: Observable<Task[]>;
+  incompleteTodos$: Observable<Task[]>;
 
-  // Local state for editing
-  editingTodoId: string | null = null;
-  editedTodoName: string = '';
+  editedTodoName: string = ''; // Needed for edit mode
+  editingTodoId: number | null = null; // Tracks which task is being edited
 
   constructor(private fb: FormBuilder, private store: Store) {
     this.todos$ = this.store.select(selectAllTodos);
@@ -48,59 +27,49 @@ export class TodoListComponent implements OnInit {
 
   ngOnInit(): void {
     this.todoForm = this.fb.group({
-      name: new FormControl('', [Validators.min(2), Validators.required]),
+      title: new FormControl('', [Validators.required, Validators.minLength(2)]),
     });
+    this.store.dispatch(loadTasks());
   }
 
-  onSubmit() {
-    this.todoForm?.reset();
-  }
-
-  addTodo(): void {
-    if (this.todoForm?.valid) {
-      this.store.dispatch(
-        addTask({
-          task: {
-            name: this.todoForm.value.name,
-            complete: false,
-          },
-        }),
-      );
+  addTodo() {
+    if (this.todoForm.valid) {
+      const newTask: Task = {
+        id: Date.now(),
+        title: this.todoForm.value.title,
+        completed: false,
+      };
+      this.store.dispatch(addTask({ task: newTask }));
       this.todoForm.reset();
     }
   }
 
-  completeTodo(id: string): void {
-    this.store.dispatch(completeTask({ id }));
+  completeTodo(taskId: number) {
+    this.store.dispatch(completeTask({ taskId }));
   }
 
-  removeTodo(id: string): void {
-    this.store.dispatch(removeTask({ id }));
+  removeTodo(taskId: number) {
+    this.store.dispatch(removeTask({ taskId }));
   }
 
-  resetAllTodos(): void {
-    this.store.dispatch(resetTasks());
+  startEdit(task: Task) {
+    this.editingTodoId = task.id;
+    this.editedTodoName = task.title;
   }
 
-  startEdit(todo: Task): void {
-    this.editingTodoId = todo.id;
-    this.editedTodoName = todo.name;
-  }
-
-  saveEdit(todo: Task): void {
-    if (this.editingTodoId === todo.id) {
-      this.store.dispatch(
-        editTask({
-          id: todo.id,
-          updates: { name: this.editedTodoName },
-        }),
-      );
-      this.cancelEdit();
+  saveEdit(task: Task) {
+    if (this.editedTodoName.trim().length > 0) {
+      this.store.dispatch(editTask({ task: { ...task, title: this.editedTodoName } }));
     }
+    this.cancelEdit();
   }
 
-  cancelEdit(): void {
+  cancelEdit() {
     this.editingTodoId = null;
     this.editedTodoName = '';
+  }
+
+  resetAllTodos() {
+    this.store.dispatch(resetTasks());
   }
 }
